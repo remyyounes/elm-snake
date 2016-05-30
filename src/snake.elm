@@ -3,6 +3,7 @@ import Html.App as Html
 import Html.Attributes exposing (..)
 import Html.Events exposing (on)
 import Json.Decode as Json exposing ((:=))
+
 import Keyboard exposing (KeyCode)
 import AnimationFrame
 import Time exposing (Time)
@@ -11,8 +12,7 @@ import Color exposing (..)
 import Collage exposing (..)
 import Element exposing (..)
 
-
-fps = 30
+fps = 20
 timePerFrame = 1000 / fps
 tile = 20
 
@@ -24,24 +24,39 @@ main =
     , subscriptions = subscriptions
     }
 
+--------
 -- MODEL
-type alias Vector =
-  { x: Float, y: Float }
+--------
 
-type alias Game =
-  { score: Int, direction: String, lastFrameDelta: Time, snake: Snake }
+type alias Vector =
+   { x: Float, y: Float }
 
 type alias Snake =
-  { head: Vector, body: Vector}
+   { pos: Vector, body: List Vector }
+
+type alias Game =
+   { score: Int, direction: String, lastFrameDelta: Time, snake: Snake }
 
 type alias Model =
-  { game: Game }
+   { game: Game }
 
-initSnake =
-  { head = Vector 0 0, body = Vector 0 0}
+initGame =
+   { score = 0, direction = "Right", lastFrameDelta = 0, snake = initSnake }
+
+initVectorList : List Vector
+initVectorList = List.map (\_ -> initVector) [1..10]
+
+initVector : Vector
+initVector = Vector 0.0 0.0
+
+initSnake = { pos = initVector, body = initVectorList}
 
 init : ( Model, Cmd Msg )
-init = (Model (Game 0 "Right" 0 initSnake), Cmd.none)
+init = (Model initGame, Cmd.none)
+
+---------
+-- UPDATE
+---------
 
 type Msg
     = Start
@@ -57,11 +72,10 @@ update msg model =
     Start ->
       init
     ChangeDirection direction ->
-      (Model (updateGame msg model.game) , Cmd.none)
+      (Model (updateGame msg model.game), Cmd.none)
     Tick dt ->
-      (Model (updateGame msg model.game) , Cmd.none)
+      (Model (updateGame msg model.game), Cmd.none)
 
--- HELPERS
 
 updateGame : Msg -> Game -> Game
 updateGame msg game =
@@ -77,24 +91,38 @@ updateGame msg game =
           { game
           | lastFrameDelta = lastFrameDelta - timePerFrame
           , score = score + round newDelta
-          , snake = updateSnake direction snake
+          , snake = (updateSnake direction snake)
           }
         else
           {game | lastFrameDelta = newDelta}
     _ ->
       game
 
-updateSnake direction snake =
-  let
-    head = snake.head
-  in
-    case direction of
-      "Right" -> { snake | head = Vector (head.x + tile) head.y}
-      "Left" -> { snake | head = Vector (head.x - tile) head.y}
-      "Up" -> { snake | head = Vector head.x (head.y + tile)}
-      "Down" -> { snake | head = Vector head.x (head.y - tile)}
-      _ -> snake
+updateSnake direction snake = snake
+  |> updateSnakePosition direction
+  |> updateSnakeBody
 
+updateSnakePosition direction snake =
+  { snake | pos = updatePosition direction snake.pos }
+
+updateSnakeBody snake =
+  { snake | body = followLeader snake.pos snake.body }
+
+followLeader leader body =
+    List.append [leader] (List.take (List.length body - 1) body)
+
+updatePosition direction pos =
+    case direction of
+      "Right" -> Vector (pos.x + tile) pos.y
+      "Left" -> Vector (pos.x - tile) pos.y
+      "Up" -> Vector pos.x (pos.y + tile)
+      "Down" -> Vector pos.x (pos.y - tile)
+      _ -> pos
+
+
+-------
+-- SUBS
+-------
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -104,35 +132,28 @@ subscriptions model =
   in
     Sub.batch [kb, tick]
 
+-------
 -- VIEW
+-------
 
 (=>) = (,)
 
+renderRing ring =
+  filled lightCharcoal (square tile) |>  move (ring.x, ring.y)
+
 renderSnake snake =
-  let
-    pos = snake.head
-  in
-    filled lightCharcoal (square tile) |>  move (pos.x, pos.y)
+  List.map renderRing snake.body
 
--- view : Model -> Html Msg
+view : Model -> Html Msg
 view model =
-    toHtml  <| color lightGray <| container 800 800 middle
-            <| color grey <| collage 400 400 [ renderSnake model.game.snake ]
+  toHtml  <| color lightGray
+          <| container 800 800 middle
+          <| color grey
+          <| collage 400 400 (renderSnake model.game.snake)
 
-  -- let
-      -- score = toString model.game.score
-      -- direction = text model.game.direction
-      -- head = text (toString model.game.snake.head)
-  -- in
-    --
-    -- div [ ]
-    --   [ text score
-    --   , direction
-    --   , head
-    --   ]
-
--- HELPERS
-
+--------------
+-- KEY HELPERS
+--------------
 
 type Key
     = Space
@@ -141,7 +162,6 @@ type Key
     | ArrowDown
     | ArrowUp
     | Unknown
-
 
 fromCode : Int -> Key
 fromCode keyCode =
