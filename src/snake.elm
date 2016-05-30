@@ -12,10 +12,11 @@ import Color exposing (..)
 import Collage exposing (..)
 import Element exposing (..)
 
-fps = 20
+fps = 10
 timePerFrame = 1000 / fps
 tile = 20
-
+tiles = 20
+world = { width = tiles * tile, height = tiles * tile }
 main =
   Html.program
     { init = init
@@ -47,7 +48,7 @@ initVectorList : List Vector
 initVectorList = List.map (\_ -> initVector) [1..10]
 
 initVector : Vector
-initVector = Vector 0.0 0.0
+initVector = Vector (toFloat tiles / 2) (toFloat tiles / 2)
 
 initSnake = { pos = initVector, body = initVectorList}
 
@@ -100,10 +101,31 @@ updateGame msg game =
 
 updateSnake direction snake = snake
   |> updateSnakePosition direction
+  |> wrapSnakePosition world
   |> updateSnakeBody
 
 updateSnakePosition direction snake =
   { snake | pos = updatePosition direction snake.pos }
+
+wrapSnakePosition bounds snake =
+  { snake | pos = wrapPosition world snake.pos }
+
+wrapPosition world position =
+  Vector
+    (wrap position.x tiles)
+    (wrap position.y tiles)
+
+wrap v range =
+  let
+    min = 0
+    max = range - 1
+  in
+    if v < min then
+      max
+    else if v > max then
+      min
+    else
+      v
 
 updateSnakeBody snake =
   { snake | body = followLeader snake.pos snake.body }
@@ -113,10 +135,10 @@ followLeader leader body =
 
 updatePosition direction pos =
     case direction of
-      "Right" -> Vector (pos.x + tile) pos.y
-      "Left" -> Vector (pos.x - tile) pos.y
-      "Up" -> Vector pos.x (pos.y + tile)
-      "Down" -> Vector pos.x (pos.y - tile)
+      "Right" -> Vector (pos.x + 1) pos.y
+      "Left" -> Vector (pos.x - 1) pos.y
+      "Up" -> Vector pos.x (pos.y + 1)
+      "Down" -> Vector pos.x (pos.y - 1)
       _ -> pos
 
 
@@ -139,7 +161,10 @@ subscriptions model =
 (=>) = (,)
 
 renderRing ring =
-  filled lightCharcoal (square tile) |>  move (ring.x, ring.y)
+  filled lightCharcoal (square tile) -- draw to tile dimensions
+    |>  move (ring.x * tile, ring.y * tile) -- move according to tile size
+    |>  move (-world.width/2, -world.height/2) -- mid to absolut coordinates
+    |>  move (tile/2, tile/2) -- displace origin to (0, 0)
 
 renderSnake snake =
   List.map renderRing snake.body
@@ -149,7 +174,7 @@ view model =
   toHtml  <| color lightGray
           <| container 800 800 middle
           <| color grey
-          <| collage 400 400 (renderSnake model.game.snake)
+          <| collage world.width world.height (renderSnake model.game.snake)
 
 --------------
 -- KEY HELPERS
