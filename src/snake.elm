@@ -41,6 +41,7 @@ type alias Game =
 type alias Model =
    { game: Game }
 
+
 initGame =
    { score = 0, direction = "Right", lastFrameDelta = 0, snake = initSnake }
 
@@ -160,14 +161,41 @@ subscriptions model =
 
 (=>) = (,)
 
-renderRing ring =
-  filled lightCharcoal (square tile) -- draw to tile dimensions
+type RingColor
+  = Red
+  | Blue
+
+renderRing: Color -> Vector -> Form
+renderRing color ring  =
+  filled color (square tile) -- draw to tile dimensions
     |>  move (ring.x * tile, ring.y * tile) -- move according to tile size
     |>  move (-world.width/2, -world.height/2) -- mid to absolut coordinates
     |>  move (tile/2, tile/2) -- displace origin to (0, 0)
 
 renderSnake snake =
-  List.map renderRing snake.body
+  let
+    length = List.length snake.body
+  in
+    (List.indexedMap
+      (\idx ring ->
+        renderRing (getColor Red (length - idx) length) ring )
+      snake.body)
+
+lerp min max val = min + ((max - min) * val)
+
+getColor: RingColor -> Int -> Int -> Color
+getColor c idx length =
+  let
+    rank = toFloat idx / toFloat length
+    val = round (lerp 120 200 rank)
+    grey = val // 3
+  in
+    case c of
+      Blue ->
+        rgb grey grey val
+      Red ->
+        rgb val grey grey
+
 
 view : Model -> Html Msg
 view model =
