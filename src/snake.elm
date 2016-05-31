@@ -30,7 +30,6 @@ main =
 
 type alias Model = { game: Game }
 
-
 init : ( Model, Cmd Msg )
 init = (Model initGame, Cmd.none)
 
@@ -45,10 +44,21 @@ update msg model =
       (model, Cmd.none)
     Start ->
       init
+    NewFruit pos ->
+      let
+        (game, cmds) = (updateGame msg model.game)
+      in
+        (Model game, cmds)
     ChangeDirection direction ->
-      (Model (updateGame msg model.game), Cmd.none)
+      let
+        (game, cmds) = (updateGame msg model.game)
+      in
+        (Model game, cmds)
     Tick dt ->
-      (Model (updateGame msg model.game), Cmd.none)
+      let
+        (game, cmds) = (updateGame msg model.game)
+      in
+        (Model game, cmds)
 
 -------
 -- SUBS

@@ -5,12 +5,12 @@ import SnakeLogic exposing (..)
 import Color exposing (..)
 import Collage exposing (..)
 import Element exposing (..)
-
+import Random exposing (pair, int)
 -----------------
 -- INIT VARIABLES
 -- TODO: Move in GameState ?
 -----------------
-fps = 10
+fps = 20
 timePerFrame = 1000 / fps
 tile = 20
 tiles = 20
@@ -30,8 +30,15 @@ type alias Dimensions =
 type alias Snake =
   { pos: Vector, body: List Vector }
 
+type alias Fruit =
+  { pos: Vector, bonus: Int }
+
 type alias Game =
-  { score: Int, direction: String, lastFrameDelta: Time, snake: Snake }
+  { score: Int
+  , direction: String
+  , lastFrameDelta: Time
+  , fruit: Fruit
+  , snake: Snake }
 
 type RingColor
   = Red
@@ -42,15 +49,23 @@ type RingColor
 
 initGame : Game
 initGame =
-  { score = 0, direction = "Right", lastFrameDelta = 0, snake = initSnake }
+  { score = 0
+  , direction = "Right"
+  , lastFrameDelta = 0
+  , fruit = initFruit
+  , snake = initSnake }
 
 initVectorList : List Vector
 initVectorList =
-  List.map (\_ -> initVector) [1..10]
+  List.map (\_ -> initVector) [1..2]
 
 initVector : Vector
 initVector =
   Vector (toFloat tiles / 2) (toFloat tiles / 2)
+
+initFruit : Fruit
+initFruit =
+  { pos = Vector 15 10, bonus = 20 }
 
 initSnake : Snake
 initSnake =
@@ -60,32 +75,59 @@ initSnake =
 -- Update
 ---------
 
-updateGame : Msg -> Game -> Game
+vecEql vecA vecB =
+  vecA.x == vecB.x &&
+  vecA.y == vecB.y
+
+
+updateGame : Msg -> Game -> ( Game, Cmd Msg )
 updateGame msg game =
   case msg of
     ChangeDirection direction ->
-      {game | direction = direction}
+      ({game | direction = direction}, Cmd.none)
+    NewFruit ( x, y ) ->
+      ({game | fruit = { pos = (Vector (toFloat x) (toFloat y)), bonus = 5}}, Cmd.none)
     Tick dt ->
       let
         newDelta = game.lastFrameDelta + dt
-        { score, snake, lastFrameDelta, direction } = game
+        { score, snake, lastFrameDelta, direction, fruit } = game
+        ateFruit = vecEql snake.pos fruit.pos
+        grownSnake = if ateFruit then growSnake snake else snake
+        cmds =
+          if ateFruit then
+            Random.generate
+              NewFruit
+              (pair
+                (int 0 (tiles - 1))
+                (int 0 (tiles - 1)))
+          else
+            Cmd.none
+        g =
+          if  newDelta > timePerFrame then
+            { game
+            | lastFrameDelta = lastFrameDelta - timePerFrame
+            , score = score + round newDelta
+            , fruit = updateFruit fruit
+            , snake = (updateSnake direction grownSnake)}
+          else
+            { game
+            | lastFrameDelta = newDelta
+            , snake = grownSnake}
       in
-        if  newDelta > timePerFrame then
-          { game
-          | lastFrameDelta = lastFrameDelta - timePerFrame
-          , score = score + round newDelta
-          , snake = (updateSnake direction snake)
-          }
-        else
-          {game | lastFrameDelta = newDelta}
+        (g, cmds)
     _ ->
-      game
+      (game, Cmd.none)
+
+updateFruit fruit =
+  { fruit | bonus = fruit.bonus - 1 }
+
 
 updateSnake : String -> Snake -> Snake
-updateSnake direction snake = snake
-  |> updateSnakePosition direction
-  |> wrapSnakePosition world
-  |> updateSnakeBody
+updateSnake direction snake =
+  snake
+    |> updateSnakePosition direction
+    |> wrapSnakePosition world
+    |> updateSnakeBody
 
 updateSnakePosition : String -> Snake -> Snake
 updateSnakePosition direction snake =
@@ -100,6 +142,13 @@ wrapPosition world position =
   Vector
     (wrap position.x tiles)
     (wrap position.y tiles)
+
+growSnake snake =
+  let
+    length = (List.length snake.body) - 1
+  in
+    { snake
+    | body = List.append snake.body (List.drop length snake.body)}
 
 updateSnakeBody : Snake -> Snake
 updateSnakeBody snake =
@@ -118,12 +167,20 @@ updatePosition direction pos =
 -- View
 -------
 
-renderRing: Color -> Vector -> Form
-renderRing color ring  =
+renderTile : Color -> Vector -> Form
+renderTile color position =
   filled color (square tile) -- draw to tile dimensions
-    |>  move (ring.x * tile, ring.y * tile) -- move according to tile size
+    |>  move (position.x * tile, position.y * tile) -- move according to tile size
     |>  move (tile/2, tile/2) -- displace origin to (0, 0)
     |>  move (-world.width/2, -world.height/2) -- mid to absolut coordinates
+
+renderFruit: Fruit -> Form
+renderFruit fruit =
+  renderTile orange fruit.pos
+
+renderRing: Color -> Vector -> Form
+renderRing color ring  =
+  renderTile color ring
 
 renderSnake : Snake -> List Form
 renderSnake snake =
@@ -138,7 +195,8 @@ renderSnake snake =
 viewGame : Game -> Element
 viewGame game =
   color grey
-  <| collage world.width world.height (renderSnake game.snake)
+  <| collage world.width world.height
+  <| List.append (renderSnake game.snake) [(renderFruit game.fruit)]
 
 getColor: RingColor -> Int -> Int -> Color
 getColor c idx length =

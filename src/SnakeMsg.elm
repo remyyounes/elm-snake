@@ -6,3 +6,4 @@ type Msg
     | NoOp
     | ChangeDirection String
     | Tick Time
+    | NewFruit ( Int, Int )
