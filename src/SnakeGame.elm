@@ -10,7 +10,7 @@ import Random exposing (pair, int)
 -- INIT VARIABLES
 -- TODO: Move in GameState ?
 -----------------
-fps = 20
+fps = 15
 timePerFrame = 1000 / fps
 tile = 20
 tiles = 20
@@ -38,11 +38,16 @@ type alias Game =
   , direction: String
   , lastFrameDelta: Time
   , fruit: Fruit
+  , state: GameState
   , snake: Snake }
 
-type RingColor
+type TileColor
   = Red
   | Blue
+
+type GameState
+  = Over
+  | Playing
 -------
 -- Init
 -------
@@ -52,24 +57,38 @@ initGame =
   { score = 0
   , direction = "Right"
   , lastFrameDelta = 0
-  , fruit = initFruit
+  , fruit = (newFruit 15 15)
+  , state = Playing
   , snake = initSnake }
-
-initVectorList : List Vector
-initVectorList =
-  List.map (\_ -> initVector) [1..2]
 
 initVector : Vector
 initVector =
   Vector (toFloat tiles / 2) (toFloat tiles / 2)
 
-initFruit : Fruit
-initFruit =
-  { pos = Vector 15 10, bonus = 20 }
+maxBonus : Int
+maxBonus = 100
+
+newFruit : Int -> Int -> Fruit
+newFruit x y =
+  { pos = Vector (toFloat x) (toFloat y)
+  , bonus = maxBonus }
+
+
+initSnakeLength : Int
+initSnakeLength = 3
+
+initPos length pos =
+  Vector
+    (toFloat (length - pos))
+    0.0
 
 initSnake : Snake
 initSnake =
-  { pos = initVector, body = initVectorList}
+  let
+  offset = initSnakeLength // 2
+  in
+    { pos = initPos initSnakeLength 1
+    , body = List.map (initPos initSnakeLength) [1..initSnakeLength] }
 
 ---------
 -- Update
@@ -86,13 +105,19 @@ updateGame msg game =
     ChangeDirection direction ->
       ({game | direction = direction}, Cmd.none)
     NewFruit ( x, y ) ->
-      ({game | fruit = { pos = (Vector (toFloat x) (toFloat y)), bonus = 5}}, Cmd.none)
+      ( {game | fruit = newFruit x y }
+      , Cmd.none)
     Tick dt ->
       let
+        a = Debug.log ">>>>" snake.pos
         newDelta = game.lastFrameDelta + dt
         { score, snake, lastFrameDelta, direction, fruit } = game
         ateFruit = vecEql snake.pos fruit.pos
         grownSnake = if ateFruit then growSnake snake else snake
+        updatedSnake = (updateSnake direction grownSnake)
+        ateTail = detectCollisions updatedSnake.body
+        updatedFruit = updateFruit fruit
+        gameState = if ateTail || game.state == Over then Over else Playing
         cmds =
           if ateFruit then
             Random.generate
@@ -103,20 +128,46 @@ updateGame msg game =
           else
             Cmd.none
         g =
-          if  newDelta > timePerFrame then
+          if newDelta > timePerFrame && game.state == Playing then
             { game
             | lastFrameDelta = lastFrameDelta - timePerFrame
             , score = score + round newDelta
-            , fruit = updateFruit fruit
-            , snake = (updateSnake direction grownSnake)}
+            , fruit = updatedFruit
+            , state = gameState
+            , snake = updatedSnake}
           else
             { game
             | lastFrameDelta = newDelta
+            , state = Debug.log " > " gameState
             , snake = grownSnake}
       in
         (g, cmds)
     _ ->
       (game, Cmd.none)
+
+detectCollisions body =
+  let
+    nextTail = List.tail body
+  in
+  case nextTail of
+    Just tail ->
+      case List.head body of
+        Just head -> detectCollision head tail
+        Nothing -> False
+    Nothing -> False
+
+detectCollision head tail =
+  let
+    collided =
+      List.foldl
+        (\tile m -> comp head tile)
+        False
+        tail
+  in
+    if collided then True else detectCollisions tail
+
+comp head tail =
+  tail.x == head.x && tail.y == head.y
 
 updateFruit fruit =
   { fruit | bonus = fruit.bonus - 1 }
@@ -176,7 +227,7 @@ renderTile color position =
 
 renderFruit: Fruit -> Form
 renderFruit fruit =
-  renderTile orange fruit.pos
+  renderTile (fruitColor Red fruit) fruit.pos
 
 renderRing: Color -> Vector -> Form
 renderRing color ring  =
@@ -189,7 +240,7 @@ renderSnake snake =
   in
     (List.indexedMap
       (\idx ring ->
-        renderRing (getColor Red (length - idx) length) ring )
+        renderRing (ringColor Red (length - idx) length) ring )
       snake.body)
 
 viewGame : Game -> Element
@@ -198,15 +249,24 @@ viewGame game =
   <| collage world.width world.height
   <| List.append (renderSnake game.snake) [(renderFruit game.fruit)]
 
-getColor: RingColor -> Int -> Int -> Color
-getColor c idx length =
+fruitColor: TileColor -> Fruit -> Color
+fruitColor color fruit=
+  let
+    rank = toFloat fruit.bonus / toFloat maxBonus
+    val = round (lerp 0 200 rank)
+    grey = val // 3
+  in
+    case color of
+      Blue -> rgb grey grey val
+      Red -> rgb val grey grey
+
+ringColor: TileColor -> Int -> Int -> Color
+ringColor color idx length =
   let
     rank = toFloat idx / toFloat length
     val = round (lerp 120 200 rank)
     grey = val // 3
   in
-    case c of
-      Blue ->
-        rgb grey grey val
-      Red ->
-        rgb val grey grey
+    case color of
+      Blue -> rgb grey grey val
+      Red -> rgb val grey grey
