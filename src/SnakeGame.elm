@@ -10,7 +10,7 @@ import Random exposing (pair, int)
 -- INIT VARIABLES
 -- TODO: Move in GameState ?
 -----------------
-fps = 15
+fps = 10
 timePerFrame = 1000 / fps
 tile = 20
 tiles = 20
@@ -43,6 +43,7 @@ type alias Game =
 
 type TileColor
   = Red
+  | Green
   | Blue
 
 type GameState
@@ -57,7 +58,7 @@ initGame =
   { score = 0
   , direction = "Right"
   , lastFrameDelta = 0
-  , fruit = (newFruit 15 15)
+  , fruit = (newFruit 6 0)
   , state = Playing
   , snake = initSnake }
 
@@ -73,14 +74,13 @@ newFruit x y =
   { pos = Vector (toFloat x) (toFloat y)
   , bonus = maxBonus }
 
-
-initSnakeLength : Int
-initSnakeLength = 3
-
 initPos length pos =
   Vector
     (toFloat (length - pos))
     0.0
+
+initSnakeLength : Int
+initSnakeLength = 3
 
 initSnake : Snake
 initSnake =
@@ -103,21 +103,18 @@ updateGame : Msg -> Game -> ( Game, Cmd Msg )
 updateGame msg game =
   case msg of
     ChangeDirection direction ->
-      ({game | direction = direction}, Cmd.none)
+      ({game | direction =
+        resitrictDirection game.direction direction}
+      , Cmd.none)
     NewFruit ( x, y ) ->
       ( {game | fruit = newFruit x y }
       , Cmd.none)
     Tick dt ->
       let
-        a = Debug.log ">>>>" snake.pos
         newDelta = game.lastFrameDelta + dt
         { score, snake, lastFrameDelta, direction, fruit } = game
         ateFruit = vecEql snake.pos fruit.pos
         grownSnake = if ateFruit then growSnake snake else snake
-        updatedSnake = (updateSnake direction grownSnake)
-        ateTail = detectCollisions updatedSnake.body
-        updatedFruit = updateFruit fruit
-        gameState = if ateTail || game.state == Over then Over else Playing
         cmds =
           if ateFruit then
             Random.generate
@@ -129,16 +126,21 @@ updateGame msg game =
             Cmd.none
         g =
           if newDelta > timePerFrame && game.state == Playing then
-            { game
-            | lastFrameDelta = lastFrameDelta - timePerFrame
-            , score = score + round newDelta
-            , fruit = updatedFruit
-            , state = gameState
-            , snake = updatedSnake}
+            let
+              updatedSnake = (updateSnake direction grownSnake)
+              ateTail = detectCollisions updatedSnake.body
+              updatedFruit = updateFruit fruit
+              gameState = if ateTail || game.state == Over then Over else Playing
+            in
+              { game
+              | lastFrameDelta = lastFrameDelta - timePerFrame
+              , score = score + round newDelta
+              , fruit = updatedFruit
+              , state = gameState
+              , snake = updatedSnake}
           else
             { game
             | lastFrameDelta = newDelta
-            , state = Debug.log " > " gameState
             , snake = grownSnake}
       in
         (g, cmds)
@@ -146,21 +148,18 @@ updateGame msg game =
       (game, Cmd.none)
 
 detectCollisions body =
-  let
-    nextTail = List.tail body
-  in
-  case nextTail of
+  case List.tail body of
+    Nothing -> False
     Just tail ->
       case List.head body of
-        Just head -> detectCollision head tail
         Nothing -> False
-    Nothing -> False
+        Just head -> detectCollision head tail
 
 detectCollision head tail =
   let
     collided =
       List.foldl
-        (\tile m -> comp head tile)
+        (\tile m -> m || comp head tile)
         False
         tail
   in
@@ -214,6 +213,14 @@ updatePosition direction pos =
       "Down" -> Vector pos.x (pos.y - 1)
       _ -> pos
 
+resitrictDirection previous next =
+  case next of
+    "Right" -> if previous == "Left" then previous else next
+    "Left" -> if previous == "Right" then previous else next
+    "Up" -> if previous == "Down" then previous else next
+    "Down" -> if previous == "Up" then previous else next
+    _ -> next
+
 -------
 -- View
 -------
@@ -240,7 +247,7 @@ renderSnake snake =
   in
     (List.indexedMap
       (\idx ring ->
-        renderRing (ringColor Red (length - idx) length) ring )
+        renderRing (ringColor Green (length - idx) length) ring )
       snake.body)
 
 viewGame : Game -> Element
@@ -257,16 +264,18 @@ fruitColor color fruit=
     grey = val // 3
   in
     case color of
-      Blue -> rgb grey grey val
       Red -> rgb val grey grey
+      Green -> rgb grey val grey
+      Blue -> rgb grey grey val
 
 ringColor: TileColor -> Int -> Int -> Color
 ringColor color idx length =
   let
     rank = toFloat idx / toFloat length
-    val = round (lerp 120 200 rank)
+    val = round (lerp 100 200 rank)
     grey = val // 3
   in
     case color of
-      Blue -> rgb grey grey val
       Red -> rgb val grey grey
+      Green -> rgb grey val grey
+      Blue -> rgb grey grey val
