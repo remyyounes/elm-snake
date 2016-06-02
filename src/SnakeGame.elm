@@ -35,6 +35,7 @@ type alias Fruit =
 
 type alias Game =
   { score: Int
+  , previousDirection: String
   , direction: String
   , lastFrameDelta: Time
   , fruit: Fruit
@@ -56,6 +57,7 @@ type GameState
 initGame : Game
 initGame =
   { score = 0
+  , previousDirection = "Right"
   , direction = "Right"
   , lastFrameDelta = 0
   , fruit = (newFruit 6 0)
@@ -104,7 +106,7 @@ updateGame msg game =
   case msg of
     ChangeDirection direction ->
       ({game | direction =
-        resitrictDirection game.direction direction}
+        restrictDirection game.previousDirection direction}
       , Cmd.none)
     NewFruit ( x, y ) ->
       ( {game | fruit = newFruit x y }
@@ -137,6 +139,7 @@ updateGame msg game =
               , score = score + round newDelta
               , fruit = updatedFruit
               , state = gameState
+              , previousDirection = direction
               , snake = updatedSnake}
           else
             { game
@@ -213,7 +216,7 @@ updatePosition direction pos =
       "Down" -> Vector pos.x (pos.y - 1)
       _ -> pos
 
-resitrictDirection previous next =
+restrictDirection previous next =
   case next of
     "Right" -> if previous == "Left" then previous else next
     "Left" -> if previous == "Right" then previous else next
