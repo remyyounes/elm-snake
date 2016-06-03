@@ -7,8 +7,8 @@ fruitColor:  Int -> Int -> Color
 fruitColor bonus maxBonus =
   greyedColor Red (lerpFromPosition 100 200 bonus maxBonus)
 
-ringColor: TileColor -> Int -> Int -> Color
-ringColor color idx length =
+ringColor: Int -> Int -> Color
+ringColor idx length =
   greyedColor Green (lerpFromPosition 100 200 idx length)
 
 lerpFromPosition: Float -> Float -> Int -> Int -> Int

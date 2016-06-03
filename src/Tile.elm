@@ -1,9 +1,11 @@
 module Tile exposing (tile, tiles, world, view)
 import Collage exposing (..)
 import Color exposing (..)
+import TypeList exposing (..)
 
 tile = 20
 tiles = 20
+
 world =
   { width = tiles * tile, height = tiles * tile }
 

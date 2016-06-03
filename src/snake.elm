@@ -1,84 +1,81 @@
-import Html exposing (..)
-import Html.App as Html
-import Html.Attributes exposing (..)
-import Html.Events exposing (on)
-import Json.Decode as Json exposing ((:=))
+module Snake exposing
+  ( tailToHead
+  , update
+  , growSnake
+  , view
+  )
 
 import Color exposing (..)
-import Element exposing (..)
 import Collage exposing (..)
-
-import Keyboard exposing (KeyCode)
-import AnimationFrame
-import Time exposing (Time)
-
-import SnakeMsg exposing (..)
-import SnakeKeyboard exposing (keyboardProcessor)
-import SnakeGame exposing (..)
 import TypeList exposing (..)
+import Utils.Math exposing ( wrap )
+import Utils.Color exposing ( ringColor )
+import Tile exposing (tile, tiles, world)
+import Position exposing
+  ( vecEql
+  , detectCollisions
+  )
 
-main =
-  Html.program
-    { init = init
-    , view = view
-    , update = update
-    , subscriptions = subscriptions
-    }
+tailToHead : a -> List a -> List a
+tailToHead leader body =
+    List.append [leader] (List.take (List.length body - 1) body)
 
---------
--- MODEL
---------
+update : String -> Snake -> Snake
+update direction snake =
+  snake
+    |> updateSnakePosition direction
+    |> wrapSnakePosition world
+    |> updateSnakeBody
 
-type alias Model = { game: Game }
+updateSnakePosition : String -> Snake -> Snake
+updateSnakePosition direction snake =
+  { snake | pos = updatePosition direction snake.pos }
 
-init : ( Model, Cmd Msg )
-init = (Model initGame, Cmd.none)
+wrapSnakePosition : Dimensions -> Snake -> Snake
+wrapSnakePosition bounds snake =
+  { snake | pos = wrapPosition world snake.pos }
 
----------
--- UPDATE
----------
+wrapPosition : Dimensions -> Vector -> Vector
+wrapPosition world position =
+  Vector
+    (wrap position.x tiles)
+    (wrap position.y tiles)
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-  case msg of
-    NoOp ->
-      (model, Cmd.none)
-    Start ->
-      init
-    NewFruit pos ->
-      let
-        (game, cmds) = (updateGame msg model.game)
-      in
-        (Model game, cmds)
-    ChangeDirection direction ->
-      let
-        (game, cmds) = (updateGame msg model.game)
-      in
-        (Model game, cmds)
-    Tick dt ->
-      let
-        (game, cmds) = (updateGame msg model.game)
-      in
-        (Model game, cmds)
+growSnake : Snake -> Snake
+growSnake snake =
+  let
+    length = (List.length snake.body) - 1
+  in
+    { snake
+    | body = List.append snake.body (List.drop length snake.body)}
+
+updateSnakeBody : Snake -> Snake
+updateSnakeBody snake =
+  { snake | body = tailToHead snake.pos snake.body }
+
+updatePosition : String -> Vector -> Vector
+updatePosition direction pos =
+    case direction of
+      "Right" -> Vector (pos.x + 1) pos.y
+      "Left" -> Vector (pos.x - 1) pos.y
+      "Up" -> Vector pos.x (pos.y + 1)
+      "Down" -> Vector pos.x (pos.y - 1)
+      _ -> pos
 
 -------
--- SUBS
+-- View
 -------
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-  Sub.batch
-    [ Keyboard.downs keyboardProcessor
-    , AnimationFrame.diffs Tick ]
+ringView : Color -> Vector -> Form
+ringView color ring  =
+  Tile.view color ring
 
--------
--- VIEW
--------
-
-(=>) = (,)
-
-view : Model -> Html Msg
-view model =
-  toHtml  <| color lightGray
-          <| container 800 800 middle
-          <| viewGame model.game
+view : Snake -> List Form
+view snake =
+  let
+    length = List.length snake.body
+  in
+    (List.indexedMap
+      (\idx ring ->
+        ringView (ringColor (length - idx) length) ring )
+      snake.body)

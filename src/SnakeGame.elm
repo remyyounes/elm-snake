@@ -1,7 +1,7 @@
 module SnakeGame exposing (updateGame, initGame, viewGame, Game)
 import SnakeMsg exposing (..)
 import Time exposing (Time)
-import SnakeLogic exposing (..)
+import Snake
 import Color exposing (..)
 import Collage exposing (..)
 import Element exposing (..)
@@ -11,6 +11,7 @@ import TypeList exposing (..)
 import Utils.Color exposing (..)
 import Fruit
 import Tile exposing (tiles, world)
+
 -----------------
 -- INIT VARIABLES
 -- TODO: Move in GameState ?
@@ -45,6 +46,7 @@ initGame =
 maxBonus : Int
 maxBonus = 100
 
+initPos : Int -> Int -> Vector
 initPos length pos =
   Vector
     (toFloat (length - pos))
@@ -93,11 +95,12 @@ updateGame msg game =
       (game, Cmd.none)
 
 
+stepGame : Game -> ( Game, Cmd Msg )
 stepGame game =
   let
     { score, snake, lastFrameDelta, direction, fruit } = game
     ateFruit = vecEql snake.pos fruit.pos
-    grownSnake = if ateFruit then growSnake snake else snake
+    grownSnake = if ateFruit then Snake.growSnake snake else snake
     cmds =
       if ateFruit then
         Random.generate
@@ -107,7 +110,7 @@ stepGame game =
             (int 0 (tiles - 1)))
       else
         Cmd.none
-    updatedSnake = (updateSnake direction grownSnake)
+    updatedSnake = (Snake.update direction grownSnake)
     ateTail = detectCollisions updatedSnake.body
     updatedFruit = Fruit.update fruit
     gameState = if ateTail || game.state == Over then Over else Playing
@@ -121,30 +124,21 @@ stepGame game =
       , snake = updatedSnake}
     , cmds)
 
-
-
-
+restrictDirection : String -> String -> String
+restrictDirection previous next =
+  case next of
+    "Right" -> if previous == "Left" then previous else next
+    "Left" -> if previous == "Right" then previous else next
+    "Up" -> if previous == "Down" then previous else next
+    "Down" -> if previous == "Up" then previous else next
+    _ -> next
 
 -------
 -- View
 -------
 
-renderRing: Color -> Vector -> Form
-renderRing color ring  =
-  Tile.view color ring
-
-renderSnake : Snake -> List Form
-renderSnake snake =
-  let
-    length = List.length snake.body
-  in
-    (List.indexedMap
-      (\idx ring ->
-        renderRing (ringColor Green (length - idx) length) ring )
-      snake.body)
-
 viewGame : Game -> Element
 viewGame game =
   color grey
   <| collage world.width world.height
-  <| List.append (renderSnake game.snake) [(Fruit.view game.fruit)]
+  <| List.append (Snake.view game.snake) [(Fruit.view game.fruit)]
