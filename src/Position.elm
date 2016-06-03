@@ -1,13 +1,20 @@
 module Position exposing
-  ( vecEql
+  ( Vector
+  , vecEql
   , detectCollisions
   )
 import Tile exposing (tile, tiles, world)
 
+type alias Vector =
+  { x: Float, y: Float }
+
+
+vecEql : Vector -> Vector -> Bool
 vecEql vecA vecB =
   vecA.x == vecB.x &&
   vecA.y == vecB.y
 
+detectCollisions : List Vector -> Bool
 detectCollisions body =
   case List.tail body of
     Nothing -> False
@@ -16,6 +23,7 @@ detectCollisions body =
         Nothing -> False
         Just head -> detectCollision head tail
 
+detectCollision : Vector -> List Vector -> Bool
 detectCollision head tail =
   let
     collided =

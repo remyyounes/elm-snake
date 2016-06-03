@@ -1,7 +1,11 @@
 module Utils.Color exposing (fruitColor, ringColor)
 import Utils.Math exposing (..)
 import Color exposing (..)
-import TypeList exposing (..)
+
+type TileColor
+  = Red
+  | Green
+  | Blue
 
 fruitColor:  Int -> Int -> Color
 fruitColor bonus maxBonus =
@@ -14,7 +18,6 @@ ringColor idx length =
 lerpFromPosition: Float -> Float -> Int -> Int -> Int
 lerpFromPosition min max idx length =
   round (lerp min max (toFloat idx / toFloat length))
-
 
 greyedColor: TileColor -> Int -> Color
 greyedColor color val =

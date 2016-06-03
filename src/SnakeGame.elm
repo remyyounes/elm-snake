@@ -7,7 +7,6 @@ import Collage exposing (..)
 import Element exposing (..)
 import Random exposing (pair, int)
 import Position exposing (..)
-import TypeList exposing (..)
 import Utils.Color exposing (..)
 import Fruit
 import Tile exposing (tiles, world)
@@ -19,6 +18,10 @@ import Tile exposing (tiles, world)
 fps = 15
 timePerFrame = 1000 / fps
 
+type GameState
+  = Over
+  | Playing
+
 type alias Game =
   { score: Int
   , previousDirection: String
@@ -26,7 +29,7 @@ type alias Game =
   , lastFrameDelta: Time
   , fruit: Fruit.Fruit
   , state: GameState
-  , snake: Snake }
+  , snake: Snake.Snake }
 
 -------
 -- Init
@@ -55,7 +58,7 @@ initPos length pos =
 initSnakeLength : Int
 initSnakeLength = 3
 
-initSnake : Snake
+initSnake : Snake.Snake
 initSnake =
   let
   offset = initSnakeLength // 2

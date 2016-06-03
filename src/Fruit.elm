@@ -1,5 +1,5 @@
 module Fruit exposing (init, update, view, Fruit)
-import TypeList exposing (Vector)
+import Position exposing (Vector)
 import Utils.Color exposing (fruitColor)
 import Collage exposing (..)
 import Color exposing (..)

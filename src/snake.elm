@@ -3,18 +3,25 @@ module Snake exposing
   , update
   , growSnake
   , view
+  , Snake
   )
 
 import Color exposing (..)
 import Collage exposing (..)
-import TypeList exposing (..)
 import Utils.Math exposing ( wrap )
 import Utils.Color exposing ( ringColor )
 import Tile exposing (tile, tiles, world)
 import Position exposing
-  ( vecEql
+  ( Vector
+  , vecEql
   , detectCollisions
   )
+
+type alias Snake =
+  { pos: Vector, body: List Vector }
+
+type alias Dimensions =
+  { width: Float, height: Float }
 
 tailToHead : a -> List a -> List a
 tailToHead leader body =
