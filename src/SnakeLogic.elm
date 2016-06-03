@@ -7,11 +7,10 @@ module SnakeLogic exposing
 
 import TypeList exposing (..)
 import Utils.Math exposing ( wrap )
+import Tile exposing (tile, tiles, world)
 import Position exposing
   ( vecEql
   , detectCollisions
-  , world
-  , tiles
   )
 
 tailToHead : a -> List a -> List a

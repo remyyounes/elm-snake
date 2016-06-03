@@ -1,4 +1,4 @@
-module SnakeGame exposing (updateGame, initGame, viewGame)
+module SnakeGame exposing (updateGame, initGame, viewGame, Game)
 import SnakeMsg exposing (..)
 import Time exposing (Time)
 import SnakeLogic exposing (..)
@@ -9,12 +9,23 @@ import Random exposing (pair, int)
 import Position exposing (..)
 import TypeList exposing (..)
 import Utils.Color exposing (..)
+import Fruit
+import Tile exposing (tiles, world)
 -----------------
 -- INIT VARIABLES
 -- TODO: Move in GameState ?
 -----------------
 fps = 15
 timePerFrame = 1000 / fps
+
+type alias Game =
+  { score: Int
+  , previousDirection: String
+  , direction: String
+  , lastFrameDelta: Time
+  , fruit: Fruit.Fruit
+  , state: GameState
+  , snake: Snake }
 
 -------
 -- Init
@@ -26,22 +37,13 @@ initGame =
   , previousDirection = "Right"
   , direction = "Right"
   , lastFrameDelta = 0
-  , fruit = (newFruit 6 0)
+  , fruit = (Fruit.init 6 0)
   , state = Playing
   , snake = initSnake }
 
-initVector : Vector
-initVector =
-  Vector (toFloat tiles / 2) (toFloat tiles / 2)
 
 maxBonus : Int
 maxBonus = 100
-
-newFruit : Int -> Int -> Fruit
-newFruit x y =
-  { pos = Vector (toFloat x) (toFloat y)
-  , bonus = maxBonus
-  , maxBonus = maxBonus }
 
 initPos length pos =
   Vector
@@ -71,7 +73,7 @@ updateGame msg game =
         restrictDirection game.previousDirection direction}
       , Cmd.none)
     NewFruit ( x, y ) ->
-      ( {game | fruit = newFruit x y }
+      ( {game | fruit = Fruit.init x y }
       , Cmd.none)
     Tick dt ->
       let
@@ -107,7 +109,7 @@ stepGame game =
         Cmd.none
     updatedSnake = (updateSnake direction grownSnake)
     ateTail = detectCollisions updatedSnake.body
-    updatedFruit = updateFruit fruit
+    updatedFruit = Fruit.update fruit
     gameState = if ateTail || game.state == Over then Over else Playing
   in
     (
@@ -120,28 +122,16 @@ stepGame game =
     , cmds)
 
 
-updateFruit fruit =
-  { fruit | bonus = fruit.bonus - 1 }
+
 
 
 -------
 -- View
 -------
 
-renderTile : Color -> Vector -> Form
-renderTile color position =
-  filled color (square tile) -- draw to tile dimensions
-    |>  move (position.x * tile, position.y * tile) -- move according to tile size
-    |>  move (tile/2, tile/2) -- displace origin to (0, 0)
-    |>  move (-world.width/2, -world.height/2) -- mid to absolut coordinates
-
-renderFruit: Fruit -> Form
-renderFruit fruit =
-  renderTile (fruitColor Red fruit.bonus fruit.maxBonus) fruit.pos
-
 renderRing: Color -> Vector -> Form
 renderRing color ring  =
-  renderTile color ring
+  Tile.view color ring
 
 renderSnake : Snake -> List Form
 renderSnake snake =
@@ -157,4 +147,4 @@ viewGame : Game -> Element
 viewGame game =
   color grey
   <| collage world.width world.height
-  <| List.append (renderSnake game.snake) [(renderFruit game.fruit)]
+  <| List.append (renderSnake game.snake) [(Fruit.view game.fruit)]

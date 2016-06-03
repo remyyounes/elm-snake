@@ -1,15 +1,8 @@
 module Position exposing
   ( vecEql
   , detectCollisions
-  , tile
-  , tiles
-  , world
   )
-
-tile = 20
-tiles = 20
-world =
-  { width = tiles * tile, height = tiles * tile }
+import Tile exposing (tile, tiles, world)
 
 vecEql vecA vecB =
   vecA.x == vecB.x &&

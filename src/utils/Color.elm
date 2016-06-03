@@ -3,8 +3,8 @@ import Utils.Math exposing (..)
 import Color exposing (..)
 import TypeList exposing (..)
 
-fruitColor: TileColor -> Int -> Int -> Color
-fruitColor color bonus maxBonus =
+fruitColor:  Int -> Int -> Color
+fruitColor bonus maxBonus =
   greyedColor Red (lerpFromPosition 100 200 bonus maxBonus)
 
 ringColor: TileColor -> Int -> Int -> Color
