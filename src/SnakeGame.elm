@@ -1,4 +1,4 @@
-module SnakeGame exposing (updateGame, initGame, Game, viewGame)
+module SnakeGame exposing (updateGame, initGame, viewGame)
 import SnakeMsg exposing (..)
 import Time exposing (Time)
 import SnakeLogic exposing (..)
@@ -6,50 +6,15 @@ import Color exposing (..)
 import Collage exposing (..)
 import Element exposing (..)
 import Random exposing (pair, int)
+import Position exposing (..)
+import TypeList exposing (..)
 -----------------
 -- INIT VARIABLES
 -- TODO: Move in GameState ?
 -----------------
-fps = 10
+fps = 15
 timePerFrame = 1000 / fps
-tile = 20
-tiles = 20
-world =
-  { width = tiles * tile, height = tiles * tile }
 
---------
--- Types
---------
-
-type alias Vector =
-  { x: Float, y: Float }
-
-type alias Dimensions =
-  { width: Float, height: Float }
-
-type alias Snake =
-  { pos: Vector, body: List Vector }
-
-type alias Fruit =
-  { pos: Vector, bonus: Int }
-
-type alias Game =
-  { score: Int
-  , previousDirection: String
-  , direction: String
-  , lastFrameDelta: Time
-  , fruit: Fruit
-  , state: GameState
-  , snake: Snake }
-
-type TileColor
-  = Red
-  | Green
-  | Blue
-
-type GameState
-  = Over
-  | Playing
 -------
 -- Init
 -------
@@ -96,11 +61,6 @@ initSnake =
 -- Update
 ---------
 
-vecEql vecA vecB =
-  vecA.x == vecB.x &&
-  vecA.y == vecB.y
-
-
 updateGame : Msg -> Game -> ( Game, Cmd Msg )
 updateGame msg game =
   case msg of
@@ -114,115 +74,53 @@ updateGame msg game =
     Tick dt ->
       let
         newDelta = game.lastFrameDelta + dt
-        { score, snake, lastFrameDelta, direction, fruit } = game
-        ateFruit = vecEql snake.pos fruit.pos
-        grownSnake = if ateFruit then growSnake snake else snake
-        cmds =
-          if ateFruit then
-            Random.generate
-              NewFruit
-              (pair
-                (int 0 (tiles - 1))
-                (int 0 (tiles - 1)))
-          else
-            Cmd.none
-        g =
-          if newDelta > timePerFrame && game.state == Playing then
-            let
-              updatedSnake = (updateSnake direction grownSnake)
-              ateTail = detectCollisions updatedSnake.body
-              updatedFruit = updateFruit fruit
-              gameState = if ateTail || game.state == Over then Over else Playing
-            in
-              { game
-              | lastFrameDelta = lastFrameDelta - timePerFrame
-              , score = score + round newDelta
-              , fruit = updatedFruit
-              , state = gameState
-              , previousDirection = direction
-              , snake = updatedSnake}
-          else
-            { game
-            | lastFrameDelta = newDelta
-            , snake = grownSnake}
+        ticked = newDelta > timePerFrame && game.state == Playing
+        newFrameDelta =
+          case ticked of
+            True -> game.lastFrameDelta - timePerFrame
+            False -> newDelta
+        g = { game | lastFrameDelta = newFrameDelta }
       in
-        (g, cmds)
+        if ticked then
+          stepGame g
+        else
+          ( g , Cmd.none )
     _ ->
       (game, Cmd.none)
 
-detectCollisions body =
-  case List.tail body of
-    Nothing -> False
-    Just tail ->
-      case List.head body of
-        Nothing -> False
-        Just head -> detectCollision head tail
 
-detectCollision head tail =
+stepGame game =
   let
-    collided =
-      List.foldl
-        (\tile m -> m || comp head tile)
-        False
-        tail
+    { score, snake, lastFrameDelta, direction, fruit } = game
+    ateFruit = vecEql snake.pos fruit.pos
+    grownSnake = if ateFruit then growSnake snake else snake
+    cmds =
+      if ateFruit then
+        Random.generate
+          NewFruit
+          (pair
+            (int 0 (tiles - 1))
+            (int 0 (tiles - 1)))
+      else
+        Cmd.none
+    updatedSnake = (updateSnake direction grownSnake)
+    ateTail = detectCollisions updatedSnake.body
+    updatedFruit = updateFruit fruit
+    gameState = if ateTail || game.state == Over then Over else Playing
   in
-    if collided then True else detectCollisions tail
+    (
+      { game
+      | score = score
+      , fruit = updatedFruit
+      , state = gameState
+      , previousDirection = direction
+      , snake = updatedSnake}
+    , cmds)
 
-comp head tail =
-  tail.x == head.x && tail.y == head.y
 
 updateFruit fruit =
   { fruit | bonus = fruit.bonus - 1 }
 
-
-updateSnake : String -> Snake -> Snake
-updateSnake direction snake =
-  snake
-    |> updateSnakePosition direction
-    |> wrapSnakePosition world
-    |> updateSnakeBody
-
-updateSnakePosition : String -> Snake -> Snake
-updateSnakePosition direction snake =
-  { snake | pos = updatePosition direction snake.pos }
-
-wrapSnakePosition : Dimensions -> Snake -> Snake
-wrapSnakePosition bounds snake =
-  { snake | pos = wrapPosition world snake.pos }
-
-wrapPosition : Dimensions -> Vector -> Vector
-wrapPosition world position =
-  Vector
-    (wrap position.x tiles)
-    (wrap position.y tiles)
-
-growSnake snake =
-  let
-    length = (List.length snake.body) - 1
-  in
-    { snake
-    | body = List.append snake.body (List.drop length snake.body)}
-
-updateSnakeBody : Snake -> Snake
-updateSnakeBody snake =
-  { snake | body = tailToHead snake.pos snake.body }
-
-updatePosition : String -> Vector -> Vector
-updatePosition direction pos =
-    case direction of
-      "Right" -> Vector (pos.x + 1) pos.y
-      "Left" -> Vector (pos.x - 1) pos.y
-      "Up" -> Vector pos.x (pos.y + 1)
-      "Down" -> Vector pos.x (pos.y - 1)
-      _ -> pos
-
-restrictDirection previous next =
-  case next of
-    "Right" -> if previous == "Left" then previous else next
-    "Left" -> if previous == "Right" then previous else next
-    "Up" -> if previous == "Down" then previous else next
-    "Down" -> if previous == "Up" then previous else next
-    _ -> next
 
 -------
 -- View

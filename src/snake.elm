@@ -15,6 +15,7 @@ import Time exposing (Time)
 import SnakeMsg exposing (..)
 import SnakeKeyboard exposing (keyboardProcessor)
 import SnakeGame exposing (..)
+import TypeList exposing (..)
 
 main =
   Html.program
