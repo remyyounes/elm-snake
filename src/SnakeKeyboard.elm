@@ -6,12 +6,12 @@ import SnakeMsg exposing (..)
 --------------
 
 type Key
-    = Space
-    | ArrowLeft
-    | ArrowRight
-    | ArrowDown
-    | ArrowUp
-    | Unknown
+  = Space
+  | ArrowLeft
+  | ArrowRight
+  | ArrowDown
+  | ArrowUp
+  | Unknown
 
 fromCode : Int -> Key
 fromCode keyCode =

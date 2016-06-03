@@ -45,7 +45,6 @@ initGame =
   , state = Playing
   , snake = initSnake }
 
-
 maxBonus : Int
 maxBonus = 100
 
@@ -61,7 +60,7 @@ initSnakeLength = 3
 initSnake : Snake.Snake
 initSnake =
   let
-  offset = initSnakeLength // 2
+    offset = initSnakeLength // 2
   in
     { pos = initPos initSnakeLength 1
     , body = List.map (initPos initSnakeLength) [1..initSnakeLength] }
@@ -144,4 +143,4 @@ viewGame : Game -> Element
 viewGame game =
   color grey
   <| collage world.width world.height
-  <| List.append (Snake.view game.snake) [(Fruit.view game.fruit)]
+  <| List.append [(Fruit.view game.fruit)] (Snake.view game.snake)

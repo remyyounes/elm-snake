@@ -15,17 +15,16 @@ import Position exposing
   ( Vector
   , vecEql
   , detectCollisions
+  , wrapPosition
+  , Dimensions
   )
 
 type alias Snake =
   { pos: Vector, body: List Vector }
 
-type alias Dimensions =
-  { width: Float, height: Float }
-
 tailToHead : a -> List a -> List a
 tailToHead leader body =
-    List.append [leader] (List.take (List.length body - 1) body)
+  List.append [leader] (List.take (List.length body - 1) body)
 
 update : String -> Snake -> Snake
 update direction snake =
@@ -42,11 +41,6 @@ wrapSnakePosition : Dimensions -> Snake -> Snake
 wrapSnakePosition bounds snake =
   { snake | pos = wrapPosition world snake.pos }
 
-wrapPosition : Dimensions -> Vector -> Vector
-wrapPosition world position =
-  Vector
-    (wrap position.x tiles)
-    (wrap position.y tiles)
 
 growSnake : Snake -> Snake
 growSnake snake =
@@ -62,20 +56,16 @@ updateSnakeBody snake =
 
 updatePosition : String -> Vector -> Vector
 updatePosition direction pos =
-    case direction of
-      "Right" -> Vector (pos.x + 1) pos.y
-      "Left" -> Vector (pos.x - 1) pos.y
-      "Up" -> Vector pos.x (pos.y + 1)
-      "Down" -> Vector pos.x (pos.y - 1)
-      _ -> pos
+  case direction of
+    "Right" -> Vector (pos.x + 1) pos.y
+    "Left" -> Vector (pos.x - 1) pos.y
+    "Up" -> Vector pos.x (pos.y + 1)
+    "Down" -> Vector pos.x (pos.y - 1)
+    _ -> pos
 
 -------
 -- View
 -------
-
-ringView : Color -> Vector -> Form
-ringView color ring  =
-  Tile.view color ring
 
 view : Snake -> List Form
 view snake =
@@ -84,5 +74,5 @@ view snake =
   in
     (List.indexedMap
       (\idx ring ->
-        ringView (ringColor (length - idx) length) ring )
+        Tile.view (ringColor (length - idx) length) ring )
       snake.body)

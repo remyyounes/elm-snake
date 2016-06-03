@@ -2,11 +2,17 @@ module Position exposing
   ( Vector
   , vecEql
   , detectCollisions
+  , Dimensions
+  , wrapPosition
   )
+import Utils.Math exposing (wrap)
 import Tile exposing (tile, tiles, world)
 
 type alias Vector =
   { x: Float, y: Float }
+
+type alias Dimensions =
+  { width: Float, height: Float }
 
 
 vecEql : Vector -> Vector -> Bool
@@ -33,3 +39,9 @@ detectCollision head tail =
         tail
   in
     if collided then True else detectCollisions tail
+
+wrapPosition : Dimensions -> Vector -> Vector
+wrapPosition world position =
+  Vector
+    (wrap position.x tiles)
+    (wrap position.y tiles)
