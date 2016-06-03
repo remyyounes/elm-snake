@@ -63,7 +63,10 @@ initSnake =
     offset = initSnakeLength // 2
   in
     { pos = initPos initSnakeLength 1
-    , body = List.map (initPos initSnakeLength) [1..initSnakeLength] }
+    , body = List.map (initPos initSnakeLength) [1..initSnakeLength]
+    , direction = "Right"
+    , previousDirection = "Right"
+    }
 
 ---------
 -- Update
@@ -73,9 +76,7 @@ updateGame : Msg -> Game -> ( Game, Cmd Msg )
 updateGame msg game =
   case msg of
     ChangeDirection direction ->
-      ({game | direction =
-        restrictDirection game.previousDirection direction}
-      , Cmd.none)
+      stepGame msg game
     NewFruit ( x, y ) ->
       ( {game | fruit = Fruit.init x y }
       , Cmd.none)
@@ -90,50 +91,47 @@ updateGame msg game =
         g = { game | lastFrameDelta = newFrameDelta }
       in
         if ticked then
-          stepGame g
+          stepGame msg g
         else
           ( g , Cmd.none )
     _ ->
       (game, Cmd.none)
 
 
-stepGame : Game -> ( Game, Cmd Msg )
-stepGame game =
-  let
-    { score, snake, lastFrameDelta, direction, fruit } = game
-    ateFruit = vecEql snake.pos fruit.pos
-    grownSnake = if ateFruit then Snake.growSnake snake else snake
-    cmds =
-      if ateFruit then
-        Random.generate
-          NewFruit
-          (pair
-            (int 0 (tiles - 1))
-            (int 0 (tiles - 1)))
-      else
-        Cmd.none
-    updatedSnake = (Snake.update direction grownSnake)
-    ateTail = detectCollisions updatedSnake.body
-    updatedFruit = Fruit.update fruit
-    gameState = if ateTail || game.state == Over then Over else Playing
-  in
-    (
-      { game
-      | score = score
-      , fruit = updatedFruit
-      , state = gameState
-      , previousDirection = direction
-      , snake = updatedSnake}
-    , cmds)
-
-restrictDirection : String -> String -> String
-restrictDirection previous next =
-  case next of
-    "Right" -> if previous == "Left" then previous else next
-    "Left" -> if previous == "Right" then previous else next
-    "Up" -> if previous == "Down" then previous else next
-    "Down" -> if previous == "Up" then previous else next
-    _ -> next
+stepGame : Msg -> Game -> ( Game, Cmd Msg )
+stepGame msg game =
+  case msg of
+    ChangeDirection direction ->
+      ({game | snake = Snake.update msg game.snake}
+      , Cmd.none)
+    Tick dt ->
+      let
+        { score, snake, lastFrameDelta, direction, fruit } = game
+        ateFruit = vecEql snake.pos fruit.pos
+        grownSnake = if ateFruit then Snake.growSnake snake else snake
+        cmds =
+          if ateFruit then
+            Random.generate
+              NewFruit
+              (pair
+                (int 0 (tiles - 1))
+                (int 0 (tiles - 1)))
+          else
+            Cmd.none
+        updatedSnake = (Snake.update msg grownSnake)
+        ateTail = detectCollisions updatedSnake.body
+        updatedFruit = Fruit.update fruit
+        gameState = if ateTail || game.state == Over then Over else Playing
+      in
+        (
+          { game
+          | score = score
+          , fruit = updatedFruit
+          , state = gameState
+          , previousDirection = direction
+          , snake = updatedSnake}
+        , cmds)
+    _ -> (game, Cmd.none)
 
 -------
 -- View

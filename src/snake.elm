@@ -6,6 +6,9 @@ module Snake exposing
   , Snake
   )
 
+import Debug
+
+import SnakeMsg exposing (..)
 import Color exposing (..)
 import Collage exposing (..)
 import Utils.Math exposing ( wrap )
@@ -20,18 +23,32 @@ import Position exposing
   )
 
 type alias Snake =
-  { pos: Vector, body: List Vector }
+  { pos: Vector
+  , body: List Vector
+  , direction: String
+  , previousDirection: String
+  }
 
 tailToHead : a -> List a -> List a
 tailToHead leader body =
   List.append [leader] (List.take (List.length body - 1) body)
 
-update : String -> Snake -> Snake
-update direction snake =
-  snake
-    |> updateSnakePosition direction
-    |> wrapSnakePosition world
-    |> updateSnakeBody
+update : Msg -> Snake -> Snake
+update msg snake =
+  case msg of
+    Tick dt ->
+      snake
+        |> updateSnakePosition snake.direction
+        |> wrapSnakePosition world
+        |> updateSnakeBody
+        |> rememberDirection
+    ChangeDirection direction ->
+      { snake | direction =
+        restrictDirection snake.previousDirection direction }
+    _ -> snake
+
+rememberDirection snake =
+  { snake | previousDirection = snake.direction }
 
 updateSnakePosition : String -> Snake -> Snake
 updateSnakePosition direction snake =
@@ -62,6 +79,16 @@ updatePosition direction pos =
     "Up" -> Vector pos.x (pos.y + 1)
     "Down" -> Vector pos.x (pos.y - 1)
     _ -> pos
+
+
+restrictDirection : String -> String -> String
+restrictDirection previous next =
+  case next of
+    "Right" -> if previous == "Left" then previous else next
+    "Left" -> if previous == "Right" then previous else next
+    "Up" -> if previous == "Down" then previous else next
+    "Down" -> if previous == "Up" then previous else next
+    _ -> next
 
 -------
 -- View
