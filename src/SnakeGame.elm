@@ -8,6 +8,7 @@ import Element exposing (..)
 import Random exposing (pair, int)
 import Position exposing (..)
 import TypeList exposing (..)
+import Utils.Color exposing (..)
 -----------------
 -- INIT VARIABLES
 -- TODO: Move in GameState ?
@@ -39,7 +40,8 @@ maxBonus = 100
 newFruit : Int -> Int -> Fruit
 newFruit x y =
   { pos = Vector (toFloat x) (toFloat y)
-  , bonus = maxBonus }
+  , bonus = maxBonus
+  , maxBonus = maxBonus }
 
 initPos length pos =
   Vector
@@ -135,7 +137,7 @@ renderTile color position =
 
 renderFruit: Fruit -> Form
 renderFruit fruit =
-  renderTile (fruitColor Red fruit) fruit.pos
+  renderTile (fruitColor Red fruit.bonus fruit.maxBonus) fruit.pos
 
 renderRing: Color -> Vector -> Form
 renderRing color ring  =
@@ -156,27 +158,3 @@ viewGame game =
   color grey
   <| collage world.width world.height
   <| List.append (renderSnake game.snake) [(renderFruit game.fruit)]
-
-fruitColor: TileColor -> Fruit -> Color
-fruitColor color fruit=
-  let
-    rank = toFloat fruit.bonus / toFloat maxBonus
-    val = round (lerp 0 200 rank)
-    grey = val // 3
-  in
-    case color of
-      Red -> rgb val grey grey
-      Green -> rgb grey val grey
-      Blue -> rgb grey grey val
-
-ringColor: TileColor -> Int -> Int -> Color
-ringColor color idx length =
-  let
-    rank = toFloat idx / toFloat length
-    val = round (lerp 100 200 rank)
-    grey = val // 3
-  in
-    case color of
-      Red -> rgb val grey grey
-      Green -> rgb grey val grey
-      Blue -> rgb grey grey val

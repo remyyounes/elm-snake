@@ -1,35 +1,18 @@
 module SnakeLogic exposing
-  ( lerp
-  , wrap
-  , tailToHead
+  ( tailToHead
   , updateSnake
   , restrictDirection
   , growSnake
   )
 
 import TypeList exposing (..)
+import Utils.Math exposing ( wrap )
 import Position exposing
   ( vecEql
   , detectCollisions
   , world
   , tiles
   )
-
-lerp : number -> number -> number -> number
-lerp min max val = min + ((max - min) * val)
-
-wrap : Float -> Int -> Float
-wrap v range =
-  let
-    min = 0
-    max = range - 1
-  in
-    if v < min then
-      max
-    else if v > max then
-      min
-    else
-      v
 
 tailToHead : a -> List a -> List a
 tailToHead leader body =

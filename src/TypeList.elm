@@ -14,7 +14,7 @@ type alias Snake =
   { pos: Vector, body: List Vector }
 
 type alias Fruit =
-  { pos: Vector, bonus: Int }
+  { pos: Vector, bonus: Int, maxBonus: Int}
 
 type alias Game =
   { score: Int
