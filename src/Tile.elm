@@ -1,4 +1,4 @@
-module Tile exposing (tile, tiles, world, view, viewHead)
+module Tile exposing (tile, tiles, world, view, viewHead, viewTail)
 import Collage exposing (..)
 import Color exposing (..)
 
@@ -12,6 +12,20 @@ view : Color -> {a | x : Float, y : Float} -> Form
 view color position =
   filled color (square tile)
     |> placeTile position
+
+viewTail color position direction =
+  let
+    angle =
+      case direction of
+        "Up" -> 0.0
+        "Right" -> 270.0
+        "Down" -> 180.0
+        "Left" -> 90.0
+        _ -> 0.0
+  in
+    filled color (polygon [(-tile / 2, tile / 2), (tile / 2, tile / 2), (0, -tile / 2)] )
+      |> rotate (angle* 3.14 / 180.0)
+      |> placeTile position
 
 viewHead color position direction =
   let

@@ -4,6 +4,7 @@ module Snake exposing
   , growSnake
   , view
   , viewHead
+  , viewTail
   , Snake
   )
 
@@ -100,7 +101,20 @@ view snake =
   let
     length = List.length snake.body
   in
-    List.append (viewTail snake) (viewHead snake)
+    (List.indexedMap
+      (\idx ring ->
+        let
+          color = (ringColor (length - idx) length)
+        in
+          if idx == 0 then
+            Tile.viewHead green ring snake.previousDirection
+          else if idx == length - 1 then
+            Tile.viewTail color ring snake.previousDirection
+          else
+            Tile.view color ring
+      )
+      snake.body
+    )
 
 viewTail snake =
   case List.tail snake.body of
@@ -118,4 +132,4 @@ viewTail snake =
 viewHead snake =
   case List.head snake.body of
     Nothing -> []
-    Just head -> [(Tile.viewHead green head snake.previousDirection)]
+    Just head -> [()]
