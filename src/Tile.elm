@@ -37,8 +37,20 @@ placeTile position form =
 
 directionAngle direction =
   case direction of
-    "Up" -> 0.0
-    "Right" -> 270.0
-    "Down" -> 180.0
-    "Left" -> 90.0
+    "UpUp" -> 0.0
+    "UpRight" -> 270.0
+    "UpLeft" -> 90.0
+
+    "DownDown" -> 180.0
+    "DownRight" -> 270.0
+    "DownLeft" -> 90.0
+
+    "RightRight" -> 270.0
+    "RightUp" -> 0.0
+    "RightDown" -> 180.0
+
+    "LeftLeft" -> 90.0
+    "LeftUp" -> 0.0
+    "LeftDown" -> 180.0
+
     _ -> 0.0

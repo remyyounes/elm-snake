@@ -3,8 +3,6 @@ module Snake exposing
   , update
   , growSnake
   , view
-  , viewHead
-  , viewTail
   , Snake
   , Ring
   )
@@ -78,10 +76,18 @@ growSnake snake =
 updateSnakeBody : Snake -> Snake
 updateSnakeBody snake =
   let
-    orientation = getOrientation snake.previousDirection snake.direction
-    head = { pos = snake.pos, orientation = orientation }
+    orientationCur = snake.direction ++ snake.direction
+    orientationPrev = snake.previousDirection ++ snake.direction
+    head = { pos = snake.pos, orientation = orientationCur }
+    prevBody = List.append
+      (List.map (setOrientation orientationPrev) (List.take 1 snake.body))
+      (List.drop 1 snake.body)
   in
-    { snake | body = tailToHead head snake.body }
+    { snake | body = tailToHead head prevBody }
+
+
+setOrientation orientation ring =
+  { ring | orientation = orientation}
 
 updatePosition : String -> Vector -> Vector
 updatePosition direction pos =
@@ -102,39 +108,6 @@ restrictDirection previous next =
     "Down" -> if previous == "Up" then previous else next
     _ -> next
 
--- "⎡"
--- "⎣"
--- "⎤"
--- "⎦"
--- "_"
--- "|"
-getOrientation previous current =
-  case previous of
-    "Up" ->
-      case current of
-        "Up" -> "|"
-        "Right" -> "⎡"
-        "Left" -> "⎤"
-        _ -> "_"
-    "Down" ->
-      case current of
-        "Down" -> "|"
-        "Right" -> "⎣"
-        "Left" -> "⎦"
-        _ -> "_"
-    "Right" ->
-      case current of
-        "Right" -> "_"
-        "Down" -> "⎤"
-        "Up" -> "⎦"
-        _ -> "_"
-    "Left" ->
-      case current of
-        "Left" -> "_"
-        "Down" -> "⎡"
-        "Up" -> "⎣"
-        _ -> "_"
-    _ -> "_"
 -------
 -- View
 -------
@@ -150,29 +123,11 @@ view snake =
           color = (ringColor (length - idx) length)
         in
           if idx == 0 then
-            Tile.viewHead green ring.pos snake.previousDirection
+            Tile.viewHead green ring.pos ring.orientation
           else if idx == length - 1 then
-            Tile.viewTail color ring.pos snake.previousDirection
+            Tile.viewTail color ring.pos ring.orientation
           else
             Tile.view color ring.pos
       )
       snake.body
     )
-
-viewTail snake =
-  case List.tail snake.body of
-    Nothing -> []
-    Just tail ->
-      let
-        length = List.length tail
-      in
-        (List.indexedMap
-          (\idx ring ->
-            Tile.view (ringColor (length - idx) length) ring )
-          tail)
-
--- viewHead : a -> List Form
-viewHead snake =
-  case List.head snake.body of
-    Nothing -> []
-    Just head -> [()]
