@@ -3,6 +3,7 @@ module Snake exposing
   , update
   , growSnake
   , view
+  , viewHead
   , Snake
   )
 
@@ -99,7 +100,22 @@ view snake =
   let
     length = List.length snake.body
   in
-    (List.indexedMap
-      (\idx ring ->
-        Tile.view (ringColor (length - idx) length) ring )
-      snake.body)
+    List.append (viewTail snake) (viewHead snake)
+
+viewTail snake =
+  case List.tail snake.body of
+    Nothing -> []
+    Just tail ->
+      let
+        length = List.length tail
+      in
+        (List.indexedMap
+          (\idx ring ->
+            Tile.view (ringColor (length - idx) length) ring )
+          tail)
+
+-- viewHead : a -> List Form
+viewHead snake =
+  case List.head snake.body of
+    Nothing -> []
+    Just head -> [(Tile.viewHead green head snake.previousDirection)]
