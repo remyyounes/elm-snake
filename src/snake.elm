@@ -117,7 +117,7 @@ view snake =
   let
     length = List.length snake.body
   in
-    (List.indexedMap
+    List.reverse (List.indexedMap
       (\idx ring ->
         let
           color = (ringColor (length - idx) length)

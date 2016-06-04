@@ -63,7 +63,7 @@ initSnakeLength = 3
 
 initRing : Int -> Int -> Snake.Ring
 initRing length pos =
-  { orientation = "_"
+  { orientation = "RightRight"
   , pos = initPos length pos }
 
 initSnake : Snake.Snake
