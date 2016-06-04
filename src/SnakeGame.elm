@@ -48,14 +48,23 @@ initGame =
 maxBonus : Int
 maxBonus = 100
 
+-- "⎡"
+-- "⎣"
+-- "⎤"
+-- "⎦"
+-- "_"
+-- "|"
 initPos : Int -> Int -> Vector
 initPos length pos =
-  Vector
-    (toFloat (length - pos))
-    0.0
+  Vector (toFloat (length - pos))  0.0
 
 initSnakeLength : Int
 initSnakeLength = 3
+
+initRing : Int -> Int -> Snake.Ring
+initRing length pos =
+  { orientation = "_"
+  , pos = initPos length pos }
 
 initSnake : Snake.Snake
 initSnake =
@@ -63,7 +72,7 @@ initSnake =
     offset = initSnakeLength // 2
   in
     { pos = initPos initSnakeLength 1
-    , body = List.map (initPos initSnakeLength) [1..initSnakeLength]
+    , body = List.map (initRing initSnakeLength) [1..initSnakeLength]
     , direction = "Right"
     , previousDirection = "Right"
     }
@@ -119,7 +128,7 @@ stepGame msg game =
           else
             Cmd.none
         updatedSnake = (Snake.update msg grownSnake)
-        ateTail = detectCollisions updatedSnake.body
+        ateTail = detectCollisions (List.map .pos updatedSnake.body)
         updatedFruit = Fruit.update fruit
         gameState = if ateTail || game.state == Over then Over else Playing
       in

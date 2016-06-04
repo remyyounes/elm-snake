@@ -6,6 +6,7 @@ module Snake exposing
   , viewHead
   , viewTail
   , Snake
+  , Ring
   )
 
 import Debug
@@ -24,9 +25,14 @@ import Position exposing
   , Dimensions
   )
 
+type alias Ring =
+  { pos: Vector
+  , orientation: String
+  }
+
 type alias Snake =
   { pos: Vector
-  , body: List Vector
+  , body: List Ring
   , direction: String
   , previousDirection: String
   }
@@ -71,7 +77,11 @@ growSnake snake =
 
 updateSnakeBody : Snake -> Snake
 updateSnakeBody snake =
-  { snake | body = tailToHead snake.pos snake.body }
+  let
+    orientation = getOrientation snake.previousDirection snake.direction
+    head = { pos = snake.pos, orientation = orientation }
+  in
+    { snake | body = tailToHead head snake.body }
 
 updatePosition : String -> Vector -> Vector
 updatePosition direction pos =
@@ -92,6 +102,39 @@ restrictDirection previous next =
     "Down" -> if previous == "Up" then previous else next
     _ -> next
 
+-- "⎡"
+-- "⎣"
+-- "⎤"
+-- "⎦"
+-- "_"
+-- "|"
+getOrientation previous current =
+  case previous of
+    "Up" ->
+      case current of
+        "Up" -> "|"
+        "Right" -> "⎡"
+        "Left" -> "⎤"
+        _ -> "_"
+    "Down" ->
+      case current of
+        "Down" -> "|"
+        "Right" -> "⎣"
+        "Left" -> "⎦"
+        _ -> "_"
+    "Right" ->
+      case current of
+        "Right" -> "_"
+        "Down" -> "⎤"
+        "Up" -> "⎦"
+        _ -> "_"
+    "Left" ->
+      case current of
+        "Left" -> "_"
+        "Down" -> "⎡"
+        "Up" -> "⎣"
+        _ -> "_"
+    _ -> "_"
 -------
 -- View
 -------
@@ -107,11 +150,11 @@ view snake =
           color = (ringColor (length - idx) length)
         in
           if idx == 0 then
-            Tile.viewHead green ring snake.previousDirection
+            Tile.viewHead green ring.pos snake.previousDirection
           else if idx == length - 1 then
-            Tile.viewTail color ring snake.previousDirection
+            Tile.viewTail color ring.pos snake.previousDirection
           else
-            Tile.view color ring
+            Tile.view color ring.pos
       )
       snake.body
     )
