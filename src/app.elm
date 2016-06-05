@@ -93,7 +93,7 @@ instructionsStyle =
     , ("padding", "5px")]
 
 instructions =
-  Html.text "move: (A,W,S,D) or arrows   --   restart: SPACE"
+  Html.text "A,W,S,D / ⇨, ⇩, ⇦, ⇧  --  SPACE"
 
 view : Model -> Html Msg
 view model =
