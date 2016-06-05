@@ -76,8 +76,30 @@ subscriptions model =
 
 (=>) = (,)
 
+containerStyle =
+  style
+    [ ("backgroundColor", "rgb(238, 238, 236)")
+    , ("width", "100%")
+    , ("height", "100%")
+    , ("display", "flex")
+    , ("align-items", "center")
+    , ("justify-content", "center")
+    ]
+
+instructionsStyle =
+  style
+    [ ("color", "gray")
+    , ("font-family", "monospace")
+    , ("padding", "5px")]
+
+instructions =
+  Html.text "move: (A,W,S,D) or arrows   --   restart: SPACE"
+
 view : Model -> Html Msg
 view model =
-  toHtml  <| color lightGray
-          <| container 800 800 middle
-          <| viewGame model.game
+  div [containerStyle]
+      [ div []
+            [ (toHtml <| viewGame model.game)
+            , div [instructionsStyle] [instructions]
+            ]
+      ]

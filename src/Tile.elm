@@ -2,7 +2,7 @@ module Tile exposing (tile, tiles, world, view, viewHead, viewTail, viewFruit)
 import Collage exposing (..)
 import Color exposing (..)
 
-tile = 20
+tile = 30
 tiles = 20
 
 world =

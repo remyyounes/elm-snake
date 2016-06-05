@@ -15,7 +15,7 @@ import Tile exposing (tiles, world)
 -- INIT VARIABLES
 -- TODO: Move in GameState ?
 -----------------
-fps = 15
+fps = 10
 timePerFrame = 1000 / fps
 
 type GameState
