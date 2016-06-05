@@ -18,7 +18,7 @@ viewFruit color position orientation =
     |> placeTile position
 
 viewTail color position direction =
-  filled color (polygon [(-tile / 2, tile / 2), (tile / 2, tile / 2), (0, -tile / 2)] )
+  filled color (triangle tile)
     |> rotate (degrees (getOrientation direction))
     |> placeTile position
 
@@ -41,26 +41,41 @@ placeTile position form =
 
 getShape color orientation =
   let
-    angle = degrees (cornerOrientation orientation)
+    cAngle = degrees (cornerOrientation orientation)
+    tAngle = degrees (getOrientation orientation)
     shape =
       case orientation of
-        "UpRight" -> corner color tile
-        "UpLeft" -> corner color tile
-        "LeftUp" -> corner color tile
-        "LeftDown" -> corner color tile
-        "RightUp" -> corner color tile
-        "RightDown" -> corner color tile
-        "DownLeft" -> corner color tile
-        "DownRight" -> corner color tile
-        _ -> filled color (square tile)
+        "UpRight" -> corner color tile |> rotate cAngle
+        "UpLeft" -> corner color tile |> rotate cAngle
+        "LeftUp" -> corner color tile |> rotate cAngle
+        "LeftDown" -> corner color tile |> rotate cAngle
+        "RightUp" -> corner color tile |> rotate cAngle
+        "RightDown" -> corner color tile |> rotate cAngle
+        "DownLeft" -> corner color tile |> rotate cAngle
+        "DownRight" -> corner color tile |> rotate cAngle
+        _ -> patternTile color tile |> rotate tAngle
   in
-    shape |> rotate angle
+    shape
+
+triangle size =
+  polygon
+    [ (-size / 2, size / 2)
+    , (size / 2, size / 2)
+    , (0, -size / 2)
+    ]
+
+patternTile color size =
+   group
+     [ filled color (square tile)
+     , filled (Color.rgba 0 0 0 0.2) (triangle size) |> rotate (degrees 90)
+     ]
 
 corner color size =
   group
     [ filled color (circle (size / 2) )
     , filled color (rect size (size/2) ) |>  move (0, size / 4)
     , filled color (rect (size/2) size ) |>  move (size / 4, 0)
+    -- , filled (Color.rgba 0 0 0 0.2) (triangle size) |> rotate (degrees 90)
     ]
 
 
