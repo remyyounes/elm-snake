@@ -127,7 +127,7 @@ view snake =
           else if idx == length - 1 then
             Tile.viewTail color ring.pos ring.orientation
           else
-            Tile.view color ring.pos
+            Tile.view color ring.pos ring.orientation
       )
       snake.body
     )

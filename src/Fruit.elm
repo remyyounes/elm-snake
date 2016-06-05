@@ -22,4 +22,4 @@ update fruit =
 
 view : Fruit -> Form
 view fruit =
-  Tile.view (fruitColor fruit.bonus fruit.maxBonus) fruit.pos
+  Tile.viewFruit (fruitColor fruit.bonus fruit.maxBonus) fruit.pos ""
